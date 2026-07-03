@@ -1,16 +1,12 @@
 const photographs = load("../../assets/02-work");
 
-function renderPhotograph(source) {
-  return ""; // 👈 HERE: What HTML tag can turn this source into an image?
-}
-
 // Alignments
 const horizontally = {
-  display: "",
-  flexDirection: "",
-  overflowX: "",
-  overflowY: "",
-  width: ""
+  display: "flex",
+  flexDirection: "row",
+  overflowX: "scroll",
+  overflowY: "hidden",
+  width: "100vw"
 }; // 👈 HERE: What CSS config can we can put to procedurally arrange our images?
 
 const vertically = {
@@ -22,6 +18,10 @@ const vertically = {
   alignItems: "center",
   justifyContent: "flex-start"
 };
+
+function renderPhotograph(source) {
+  return `<img src="${source}" alt="">`; // 👈 HERE: What HTML tag can turn this source into an image?
+}
 
 const longImage = photographs
   .sort(byNarrativeOrder)

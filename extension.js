@@ -30,6 +30,9 @@ let previewWorkspaceRoot;
 let previewPort;
 let extensionRoot;
 const reloadClients = new Set();
+const runningPythonLessons = new Set();
+const queuedPythonLessons = new Set();
+let suppressAutoRunOnSave = false;
 
 function activate(context) {
   extensionRoot = context.extensionUri;
@@ -181,10 +184,11 @@ async function showNotes(lesson) {
       "Lesson Notes",
       { viewColumn: vscode.ViewColumn.One, preserveFocus: true },
       {
-        enableScripts: false,
+        enableScripts: true,
         localResourceRoots: [...workspaceRoots, lessonRoot]
       }
     );
+    notesPanel.webview.onDidReceiveMessage(handleWebviewMessage);
     notesPanel.onDidDispose(() => {
       notesPanel = undefined;
     });
@@ -207,6 +211,7 @@ async function showEmbeddedPreview(lesson) {
         retainContextWhenHidden: true
       }
     );
+    embeddedPreviewPanel.webview.onDidReceiveMessage(handleWebviewMessage);
     embeddedPreviewPanel.onDidDispose(() => {
       embeddedPreviewPanel = undefined;
     });
@@ -216,6 +221,14 @@ async function showEmbeddedPreview(lesson) {
 
   embeddedPreviewPanel.title = `${lesson.title} Preview`;
   embeddedPreviewPanel.webview.html = renderEmbeddedPreviewPage(previewPort, lesson.title);
+}
+
+async function handleWebviewMessage(message) {
+  if (message?.type !== "pptStudio.navigate") {
+    return;
+  }
+
+  await moveLesson(message.direction > 0 ? 1 : -1);
 }
 
 async function closeSourceTabsBesidePreview(sourceFile) {
@@ -289,6 +302,14 @@ async function runPythonSlide() {
     return;
   }
 
+  await executePythonSlide(lesson, {
+    reveal: vscode.TaskRevealKind.Always,
+    saveBeforeRun: true,
+    queueIfRunning: true
+  });
+}
+
+async function executePythonSlide(lesson, options = {}) {
   const pythonFile = vscode.Uri.joinPath(lesson.codeRoot, "main.py");
   try {
     const stat = await vscode.workspace.fs.stat(pythonFile);
@@ -305,7 +326,23 @@ async function runPythonSlide() {
     return;
   }
 
-  await vscode.workspace.saveAll(false);
+  if (runningPythonLessons.has(lesson.slug)) {
+    if (options.queueIfRunning) {
+      queuedPythonLessons.add(lesson.slug);
+      vscode.window.setStatusBarMessage(`Queued ${lesson.title} after the current Python run.`, 3000);
+    }
+    return;
+  }
+
+  if (options.saveBeforeRun) {
+    suppressAutoRunOnSave = true;
+    try {
+      await vscode.workspace.saveAll(false);
+    } finally {
+      suppressAutoRunOnSave = false;
+    }
+  }
+
   const pythonPath = await findPythonExecutable(lesson.codeRoot);
   const task = new vscode.Task(
     { type: "pptStudio", lesson: lesson.slug },
@@ -318,11 +355,38 @@ async function runPythonSlide() {
     []
   );
   task.presentationOptions = {
-    reveal: vscode.TaskRevealKind.Always,
+    reveal: options.reveal ?? vscode.TaskRevealKind.Silent,
     panel: vscode.TaskPanelKind.Dedicated,
     clear: true
   };
-  await vscode.tasks.executeTask(task);
+  runningPythonLessons.add(lesson.slug);
+  let execution;
+  try {
+    execution = await vscode.tasks.executeTask(task);
+  } catch (error) {
+    runningPythonLessons.delete(lesson.slug);
+    throw error;
+  }
+  const endSubscription = vscode.tasks.onDidEndTaskProcess(async (event) => {
+    if (event.execution !== execution) {
+      return;
+    }
+
+    endSubscription.dispose();
+    runningPythonLessons.delete(lesson.slug);
+    const exitLabel = event.exitCode === 0 ? "updated" : `exited with code ${event.exitCode}`;
+    vscode.window.setStatusBarMessage(`${lesson.title} ${exitLabel}.`, 3000);
+
+    if (!queuedPythonLessons.delete(lesson.slug)) {
+      return;
+    }
+
+    await executePythonSlide(lesson, {
+      reveal: vscode.TaskRevealKind.Silent,
+      saveBeforeRun: false,
+      queueIfRunning: true
+    });
+  });
 }
 
 async function findPythonExecutable(codeRoot) {
@@ -335,7 +399,7 @@ async function findPythonExecutable(codeRoot) {
   for (const candidate of candidates) {
     try {
       const stat = await vscode.workspace.fs.stat(candidate);
-      if (stat.type === vscode.FileType.File) {
+      if (stat.type & (vscode.FileType.File | vscode.FileType.SymbolicLink)) {
         return candidate.fsPath;
       }
     } catch {
@@ -519,9 +583,27 @@ function injectLiveReload(html) {
     lessonStudioEvents.addEventListener("message", (event) => {
       if (event.data === "reload") location.reload();
     });
+    ${previewNavigationScript()}
   </script>`;
 
   return html.includes("</body>") ? html.replace("</body>", `${script}</body>`) : `${html}${script}`;
+}
+
+function previewNavigationScript() {
+  return `
+    window.addEventListener("keydown", (event) => {
+      const direction = navigationDirection(event);
+      if (!direction) return;
+      event.preventDefault();
+      window.parent.postMessage({ type: "pptStudio.navigate", direction }, "*");
+    });
+    function navigationDirection(event) {
+      if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return 0;
+      if (event.key === "ArrowRight" || event.key === "PageDown") return 1;
+      if (event.key === "ArrowLeft" || event.key === "PageUp") return -1;
+      return 0;
+    }
+  `;
 }
 
 async function handleSavedDocument(document) {
@@ -533,6 +615,8 @@ async function handleSavedDocument(document) {
   if (activeLesson?.note.fsPath === document.uri.fsPath) {
     await showNotes(activeLesson);
   }
+
+  await maybeAutoRunPythonSlide(document, activeLesson);
 
   if (!previewLessonRoot) {
     return;
@@ -550,6 +634,37 @@ async function handleSavedDocument(document) {
     for (const client of reloadClients) {
       client.write("data: reload\n\n");
     }
+  }
+
+}
+
+async function maybeAutoRunPythonSlide(document, activeLesson) {
+  if (suppressAutoRunOnSave || !activeLesson?.codeRoot) {
+    return;
+  }
+
+  const autoRunEnabled = vscode.workspace
+    .getConfiguration("pptStudio")
+    .get("autoRunPythonOnSave", true);
+  if (!autoRunEnabled) {
+    return;
+  }
+
+  const pythonFile = vscode.Uri.joinPath(activeLesson.codeRoot, "main.py");
+  if (document.uri.fsPath !== pythonFile.fsPath) {
+    return;
+  }
+
+  vscode.window.setStatusBarMessage(`Regenerating ${activeLesson.title}...`, 3000);
+  try {
+    await executePythonSlide(activeLesson, {
+      reveal: vscode.TaskRevealKind.Silent,
+      saveBeforeRun: false,
+      queueIfRunning: true
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    vscode.window.showErrorMessage(`PPT Studio could not run ${activeLesson.title}: ${message}`);
   }
 }
 
@@ -598,13 +713,23 @@ async function hasChildDirectory(root, childName) {
   }
 }
 
+function createNonce() {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let nonce = "";
+  for (let index = 0; index < 32; index += 1) {
+    nonce += alphabet[Math.floor(Math.random() * alphabet.length)];
+  }
+  return nonce;
+}
+
 function renderNotesPage(markdown, title, webview, noteUri) {
+  const nonce = createNonce();
   return `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} https: data:; media-src ${webview.cspSource} https: data:; style-src 'unsafe-inline';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} https: data:; media-src ${webview.cspSource} https: data:; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';">
   <title>${escapeHtml(title)}</title>
   <style>
     body {
@@ -680,18 +805,24 @@ function renderNotesPage(markdown, title, webview, noteUri) {
     a { color: var(--vscode-textLink-foreground); }
   </style>
 </head>
-<body>${markdownToHtml(markdown, (mediaPath) => resolveNoteMediaUri(webview, noteUri, mediaPath))}</body>
+<body>
+${markdownToHtml(markdown, (mediaPath) => resolveNoteMediaUri(webview, noteUri, mediaPath))}
+<script nonce="${nonce}">
+${webviewNavigationScript()}
+</script>
+</body>
 </html>`;
 }
 
 function renderEmbeddedPreviewPage(port, title) {
   const url = `http://127.0.0.1:${port}`;
+  const nonce = createNonce();
   return `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; frame-src ${url}; style-src 'unsafe-inline';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; frame-src ${url}; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';">
   <title>${escapeHtml(title)} Preview</title>
   <style>
     html, body, iframe {
@@ -710,8 +841,42 @@ function renderEmbeddedPreviewPage(port, title) {
     title="${escapeHtml(title)} live preview"
     sandbox="allow-forms allow-modals allow-pointer-lock allow-popups allow-same-origin allow-scripts"
   ></iframe>
+  <script nonce="${nonce}">
+${webviewNavigationScript()}
+  </script>
 </body>
 </html>`;
+}
+
+function webviewNavigationScript() {
+  return `
+    const vscode = acquireVsCodeApi();
+    window.addEventListener("keydown", (event) => {
+      const direction = navigationDirection(event);
+      if (!direction) return;
+      event.preventDefault();
+      postNavigation(direction);
+    });
+    window.addEventListener("message", (event) => {
+      if (event.data?.type === "pptStudio.navigate") {
+        postNavigation(event.data.direction);
+      }
+    });
+    function postNavigation(direction) {
+      vscode.postMessage({ type: "pptStudio.navigate", direction });
+    }
+    function navigationDirection(event) {
+      const target = event.target;
+      const tagName = target?.tagName?.toLowerCase();
+      if (target?.isContentEditable || tagName === "input" || tagName === "textarea" || tagName === "select") {
+        return 0;
+      }
+      if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return 0;
+      if (event.key === "ArrowRight" || event.key === "PageDown") return 1;
+      if (event.key === "ArrowLeft" || event.key === "PageUp") return -1;
+      return 0;
+    }
+  `;
 }
 
 function markdownToHtml(markdown, resolveMediaUri = (mediaPath) => mediaPath) {

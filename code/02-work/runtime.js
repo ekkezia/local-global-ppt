@@ -93,23 +93,49 @@ function display(sequence) {
 }
 
 function applyLayout(layout) {
-  const isVertical = layout.flexDirection === "column";
+  const isHorizontal = isHorizontalLayout(layout);
+  const isVertical = isVerticalLayout(layout);
+  const activeStyles = isHorizontal || isVertical ? filledStyles(layout) : {};
 
   Object.assign(imageStrip.style, {
+    alignItems: isVertical ? "center" : "stretch",
+    display: "flex",
+    flexDirection: isVertical ? "column" : "row",
+    justifyContent: isVertical ? "flex-start" : "flex-start",
     minHeight: isVertical ? "auto" : "100vh",
-    width: isVertical ? "100vw" : "max-content",
-    overflowX: isVertical ? "hidden" : "auto",
-    overflowY: isVertical ? "auto" : "hidden",
-    ...layout
+    overflowX: isHorizontal ? "scroll" : "hidden",
+    overflowY: isVertical ? "scroll" : "hidden",
+    width: "100vw",
+    ...activeStyles
   });
 
-  document.body.style.overflowX = "hidden";
+  document.body.style.overflowX = isHorizontal ? "auto" : "hidden";
   document.body.style.overflowY = "hidden";
 
   for (const image of imageStrip.querySelectorAll("img")) {
     image.style.width = isVertical ? "min(100vw, 900px)" : "auto";
     image.style.height = isVertical ? "auto" : "100vh";
   }
+}
+
+function isHorizontalLayout(layout) {
+  return layout?.display === "flex"
+    && layout.flexDirection === "row"
+    && (layout.overflowX === "scroll" || layout.overflowX === "auto")
+    && layout.width === "100vw";
+}
+
+function isVerticalLayout(layout) {
+  return layout?.display === "flex"
+    && layout.flexDirection === "column"
+    && (layout.overflowY === "scroll" || layout.overflowY === "auto")
+    && layout.width === "100vw";
+}
+
+function filledStyles(layout) {
+  return Object.fromEntries(
+    Object.entries(layout).filter(([, value]) => value !== "")
+  );
 }
 
 // Pick up images pasted after the preview has already opened.

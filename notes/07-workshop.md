@@ -27,4 +27,4 @@ function you(your_input_here) {
 
 This presentation is available here:
 <br />
-  <img src="../assets/08-workshop/github-qrcode.png" alt="Github QR code">
+  <img src="../assets/07-workshop/github-qrcode.png" alt="Github QR code">

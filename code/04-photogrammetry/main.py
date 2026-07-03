@@ -15,7 +15,7 @@ from PIL import Image
 
 
 # 👈 HERE: swap this path to choose the image that becomes 3D.
-SOURCE_IMAGE = "../../assets/04-photogrammetry/input.png"
+SOURCE_IMAGE = "../../assets/04-photogrammetry/1.png"
 
 OUTPUT_FOLDER = "output"
 MIDAS_MODEL = "DPT_Hybrid"
