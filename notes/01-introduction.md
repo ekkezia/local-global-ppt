@@ -1,5 +1,5 @@
 # Local & Global
-### Elizabeth Kezia Widjaja | @ekezia
+### Elizabeth Kezia Widjaja | @ekezia | e-kezia.com
 
 ## Local/Global from a Geographical Context 🌎
 
