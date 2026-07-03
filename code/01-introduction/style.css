@@ -1,0 +1,68 @@
+:root {
+  color-scheme: dark;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: #101114;
+  color: white;
+  margin: 0;
+  min-height: 100vh;
+}
+
+main {
+  display: grid;
+  gap: 18px;
+  min-height: 100vh;
+  padding: 20px;
+  place-content: center;
+}
+
+#image-frame {
+  align-items: center;
+  background:
+    linear-gradient(45deg, #1a1c21 25%, transparent 25%),
+    linear-gradient(-45deg, #1a1c21 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #1a1c21 75%),
+    linear-gradient(-45deg, transparent 75%, #1a1c21 75%),
+    #14161a;
+  background-position: 0 0, 0 12px, 12px -12px, -12px 0;
+  background-size: 24px 24px;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 14px;
+  display: flex;
+  height: min(64vh, 540px);
+  justify-content: center;
+  overflow: hidden;
+  width: min(80vw, 760px);
+}
+
+#rendered-image {
+  display: block;
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.caption {
+  background: #191b20;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.eyebrow {
+  color: #ffd45c;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  margin: 0 0 5px;
+  text-transform: uppercase;
+}
+
+code {
+  color: rgb(255 255 255 / 78%);
+  font-size: 12px;
+}

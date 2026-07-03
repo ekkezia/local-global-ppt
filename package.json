@@ -1,0 +1,100 @@
+{
+  "name": "ppt-studio",
+  "displayName": "PPT Studio",
+  "description": "Present my work in an interactive way in VS code.",
+  "version": "0.0.1",
+  "publisher": "local",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Education"
+  ],
+  "activationEvents": [
+    "onCommand:pptStudio.start",
+    "onCommand:pptStudio.next",
+    "onCommand:pptStudio.previous",
+    "onCommand:pptStudio.openPreview",
+    "onCommand:pptStudio.runPython",
+    "onCommand:pptStudio.stopPreview"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "markdown.markdownItPlugins": true,
+    "configuration": {
+      "title": "PPT Studio",
+      "properties": {
+        "pptStudio.pythonPath": {
+          "type": "string",
+          "default": "python3",
+          "description": "Python executable used by Run Python Slide. A lesson or workspace .venv takes priority."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "pptStudio.start",
+        "title": "Start PPT",
+        "category": "PPT Studio"
+      },
+      {
+        "command": "pptStudio.next",
+        "title": "Next Slide",
+        "category": "PPT Studio",
+        "icon": "$(arrow-right)"
+      },
+      {
+        "command": "pptStudio.previous",
+        "title": "Previous Slide",
+        "category": "PPT Studio",
+        "icon": "$(arrow-left)"
+      },
+      {
+        "command": "pptStudio.openPreview",
+        "title": "Open Preview in Browser",
+        "category": "PPT Studio",
+        "icon": "$(open-preview)"
+      },
+      {
+        "command": "pptStudio.runPython",
+        "title": "Run Python Slide",
+        "category": "PPT Studio",
+        "icon": "$(play)"
+      },
+      {
+        "command": "pptStudio.stopPreview",
+        "title": "Stop Preview Server",
+        "category": "PPT Studio"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "pptStudio.openPreview",
+          "group": "navigation@1",
+          "when": "resourceScheme == file"
+        },
+        {
+          "command": "pptStudio.runPython",
+          "group": "navigation@1",
+          "when": "resourceExtname == .py"
+        },
+        {
+          "command": "pptStudio.previous",
+          "group": "navigation@2",
+          "when": "pptStudio.pptOpen"
+        },
+        {
+          "command": "pptStudio.next",
+          "group": "navigation@3",
+          "when": "pptStudio.pptOpen"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "check": "node --check extension.js && node --test test/markdown-renderer.test.js",
+    "test": "node --test test/markdown-renderer.test.js"
+  },
+  "license": "MIT"
+}

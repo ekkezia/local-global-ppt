@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MiDaS 3D Reconstruction</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <main>
+      <canvas aria-label="Interactive 3D point cloud"></canvas>
+
+      <header>
+        <div>
+          <h1 id="source-name">Waiting for reconstruction</h1>
+        </div>
+        <p id="point-count">0 points</p>
+      </header>
+
+      <div id="empty-state">
+        <strong>Run the Python slide</strong>
+        <span>Paste an image into <code>assets/input.jpg</code>, then press the play button beside <code>main.py</code>.</span>
+      </div>
+
+      <p class="hint">Drag to rotate · Scroll to zoom</p>
+    </main>
+
+    <script src="viewer.js"></script>
+  </body>
+</html>

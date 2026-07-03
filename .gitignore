@@ -1,0 +1,13 @@
+.DS_Store
+*.vsix
+node_modules/
+__pycache__/
+.venv/
+*.pyc
+code/04-photogrammetry/**/__pycache__/
+code/04-photogrammetry/**/*.pyc
+assets/04-photogrammetry/**/__pycache__/
+assets/04-photogrammetry/**/*.pyc
+.playwright-cli
+.vscode
+*.MOV

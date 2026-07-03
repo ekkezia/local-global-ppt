@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Streets</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <main id="street-view">
+      <canvas aria-label="Interactive panoramic street view"></canvas>
+
+      <div class="topbar">
+        <div>
+          <p id="scope-label" class="eyebrow">Looking for location...</p>
+          <p id="filename">Looking for panoramas...</p>
+          <p id="story" class="meta"></p>
+          <p id="cast" class="meta"></p>
+        </div>
+        <p id="counter">0 / 0</p>
+      </div>
+
+      <div id="empty-state" hidden>
+        <strong>Could not load panorama</strong>
+        <span>Choose a location scope in <code>script.js</code>.</span>
+      </div>
+
+      <nav class="street-arrows" aria-label="Change panorama">
+        <button id="next" class="street-arrow next" type="button" aria-label="Move forward">
+          <span></span>
+        </button>
+        <button id="previous" class="street-arrow previous" type="button" aria-label="Move in reverse">
+          <span></span>
+        </button>
+      </nav>
+
+      <p class="hint">Drag to look around · Scroll to zoom</p>
+    </main>
+
+    <script src="street-sphere.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>
