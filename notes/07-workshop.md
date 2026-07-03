@@ -1,4 +1,4 @@
-# your  turn
+# YOUR TURN!!!
 
 ## The Question
 > Does an Artist have an underlying algorithm in their work that meaningfully informs their theme, style and working process?

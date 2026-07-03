@@ -1,4 +1,4 @@
-## Entering the Photograph
+## CASE03: Entering the Photograph
 
 - 3D interaction -> **360° camera**.
 
