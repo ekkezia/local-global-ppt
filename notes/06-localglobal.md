@@ -2,9 +2,9 @@
 
 Creative Coding? ✅ 
 <br /> Photography? ✅
-![Photogrammetry project image 1](../assets/07-localglobal/1.jpg)
+![Photogrammetry project image 1](../assets/06-localglobal/1.jpg)
 <br /> Creative Coding + Photography? ✅✅
-![Photogrammetry project image 1](../assets/07-localglobal/1.mov)
+![Photogrammetry project image 1](../assets/06-localglobal/1.mov)
 
 <br />
 <br />

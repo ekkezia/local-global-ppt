@@ -25,13 +25,13 @@ function createStreets(location, story, characters) {
 ```
 
 ### Jakarta: Pasar Baru
-<video controls src="../assets/06-streets/Jakarta.mov"></video>
+<video controls src="../assets/05-streets/Jakarta.mov"></video>
 
 - The narrative includes a branching decision.
 - The viewer's choice determines whether the main character gets robbed.
 
 ### Hong Kong: Jordan Street
-<video controls src="../assets/06-streets/HK.mov"></video>
+<video controls src="../assets/05-streets/HK.mov"></video>
 
 - Two girls meet after chatting through a second-hand buying platform.
 - This iteration explores:
@@ -40,12 +40,12 @@ function createStreets(location, story, characters) {
   - Parallel experiences of the same location.
 
 ### Singapore: Vertical Navigation
-<video controls src="../assets/06-streets/SG.mov"></video>
+<video controls src="../assets/05-streets/SG.mov"></video>
 
 - The Singapore iteration moves away from primarily horizontal navigation and responds to the architecture of the location.
 
 ### New York City: Recalculating Route
-<video controls src="../assets/06-streets/NYC.mov"></video>
+<video controls src="../assets/05-streets/NYC.mov"></video>
 
 *Recalculating Route* - All Streets Gallery
 - a tutorial for creating 360° photography.
